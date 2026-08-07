@@ -1,28 +1,78 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { loginAction } from "../_action/authAction";
 import { toast } from "sonner";
-import { Loader2, Eye, EyeOff, Dna, Phone } from "lucide-react";
+import {
+  Loader2,
+  Eye,
+  EyeOff,
+  Dna,
+  Phone,
+  ShieldCheck,
+  ShieldAlert,
+  GraduationCap,
+  User,
+  KeyRound,
+  ArrowLeft,
+} from "lucide-react";
 import { motion } from "framer-motion";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+// ডেমো ক্রেডেনশিয়ালের ডাটা
+const DEMO_CREDENTIALS = [
+  {
+    role: "Admin",
+    phone: "01339613196",
+    pass: "12345678",
+    icon: ShieldCheck,
+    badgeColor: "text-red-600 bg-red-500/10 border-red-500/30 hover:bg-red-500/20 dark:text-red-400",
+  },
+  {
+    role: "Moderator",
+    phone: "01339613197",
+    pass: "123456",
+    icon: ShieldAlert,
+    badgeColor: "text-amber-600 bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 dark:text-amber-400",
+  },
+  {
+    role: "Student",
+    phone: "01339613198",
+    pass: "12345678",
+    icon: GraduationCap,
+    badgeColor: "text-emerald-600 bg-emerald-500/10 border-emerald-500/30 hover:bg-emerald-500/20 dark:text-emerald-400",
+  },
+  {
+    role: "User",
+    phone: "01339613199",
+    pass: "123456",
+    icon: User,
+    badgeColor: "text-cyan-600 bg-cyan-500/10 border-cyan-500/30 hover:bg-cyan-500/20 dark:text-cyan-400",
+  },
+];
+
 export default function LoginForm() {
+  const router = useRouter();
   const [state, action, pending] = useActionState(loginAction, null);
   const [showPassword, setShowPassword] = useState(false);
+
+  // অটো-ফিলের জন্য State
+  const [phone, setPhone] = useState("");
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
     if (!state) return;
 
     if (state.success === false) {
       const errorMsg = state.message ? state.message.toLowerCase() : "";
-      
+
       if (
-        errorMsg.includes("not found") || 
-        errorMsg.includes("does not exist") || 
+        errorMsg.includes("not found") ||
+        errorMsg.includes("does not exist") ||
         errorMsg.includes("invalid") ||
         errorMsg.includes("wrong") ||
         errorMsg.includes("match")
@@ -36,9 +86,15 @@ export default function LoginForm() {
     }
   }, [state]);
 
+  // ক্রেডেনশিয়াল ফিল করার ফাংশন
+  const handleQuickFill = (demoPhone: string, demoPass: string, roleName: string) => {
+    setPhone(demoPhone);
+    setPassword(demoPass);
+    toast.info(`${roleName} ডেমো ক্রেডেনশিয়াল ফিল করা হয়েছে!`);
+  };
+
   return (
     <div className="relative flex min-h-[80vh] w-full items-center justify-center overflow-hidden p-4 md:p-8">
-      
       {/* Ambient Biology Theme Glow */}
       <div className="pointer-events-none absolute left-1/4 top-1/4 h-64 w-64 rounded-full bg-emerald-500/20 blur-[100px]" />
       <div className="pointer-events-none absolute bottom-1/4 right-1/4 h-64 w-64 rounded-full bg-cyan-500/20 blur-[100px]" />
@@ -49,9 +105,19 @@ export default function LoginForm() {
         transition={{ duration: 0.5, type: "spring", bounce: 0.4 }}
         className="relative w-full max-w-md"
       >
-        <div className="overflow-hidden rounded-2xl border border-emerald-500/20 bg-white/70 shadow-[0_8px_32px_rgba(16,185,129,0.1)] backdrop-blur-xl dark:bg-slate-950/70 dark:shadow-[0_8px_32px_rgba(16,185,129,0.05)]">
+        <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-white/70 shadow-[0_8px_32px_rgba(16,185,129,0.1)] backdrop-blur-xl dark:bg-slate-950/70 dark:shadow-[0_8px_32px_rgba(16,185,129,0.05)]">
           
-          <div className="space-y-2 p-8 pb-4 text-center">
+          {/* Back Button */}
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="absolute left-4 top-4 flex items-center gap-1.5 rounded-lg border border-slate-200/60 bg-white/50 px-3 py-1.5 text-xs font-medium text-slate-600 shadow-sm transition-all duration-200 hover:bg-slate-100 hover:text-slate-900 active:scale-95 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back</span>
+          </button>
+
+          <div className="space-y-2 p-8 pb-4 pt-10 text-center">
             <motion.div
               initial={{ scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
@@ -69,7 +135,6 @@ export default function LoginForm() {
           </div>
 
           <form action={action} className="space-y-6 p-8 pt-4">
-            
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="phone" className="text-slate-700 dark:text-slate-300">
@@ -82,6 +147,8 @@ export default function LoginForm() {
                     name="phone"
                     type="tel"
                     placeholder="01XXXXXXXXX"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
                     required
                     disabled={pending}
                     className="pl-10 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-emerald-500/50"
@@ -101,6 +168,8 @@ export default function LoginForm() {
                     name="password"
                     type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={pending}
                     className="pr-10 transition-all duration-300 focus-visible:ring-2 focus-visible:ring-emerald-500/50"
@@ -117,6 +186,34 @@ export default function LoginForm() {
                     )}
                   </button>
                 </div>
+              </div>
+            </div>
+
+            {/* Quick Demo Credentials Section */}
+            <div className="rounded-xl border border-slate-200/60 bg-slate-50/50 p-3.5 dark:border-slate-800 dark:bg-slate-900/50">
+              <div className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <KeyRound className="h-3.5 w-3.5 text-emerald-500" />
+                <span>Demo Quick Fill (Click to test)</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {DEMO_CREDENTIALS.map((cred) => {
+                  const Icon = cred.icon;
+                  return (
+                    <button
+                      key={cred.role}
+                      type="button"
+                      disabled={pending}
+                      onClick={() => handleQuickFill(cred.phone, cred.pass, cred.role)}
+                      className={`flex items-center justify-between rounded-lg border p-2 text-left text-xs font-medium transition-all duration-200 active:scale-95 ${cred.badgeColor}`}
+                    >
+                      <span className="flex items-center gap-1.5 truncate">
+                        <Icon className="h-3.5 w-3.5 shrink-0" />
+                        {cred.role}
+                      </span>
+                      <span className="text-[10px] opacity-70">Fill</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -146,7 +243,10 @@ export default function LoginForm() {
 
             <p className="text-center text-sm text-slate-500 dark:text-slate-400">
               Don&apos;t have an account?{" "}
-              <a href="/register" className="font-semibold text-emerald-600 hover:underline dark:text-emerald-400">
+              <a
+                href="/register"
+                className="font-semibold text-emerald-600 hover:underline dark:text-emerald-400"
+              >
                 Sign up
               </a>
             </p>

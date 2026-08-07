@@ -13,10 +13,16 @@ export async function requestModeratorAccessAction(): Promise<ResponseState> {
     
     try {
         const cookieStore = await cookies();
+        
+        // ডিবাগ করার জন্য ব্রাউজারের সব কুকির নাম প্রিন্ট করে দেখি
+        const allCookies = cookieStore.getAll();
+        console.log("🍪 Available Cookies in Server Action:", allCookies.map(c => c.name));
+
         const accessToken = 
             cookieStore.get("accessToken")?.value || 
             cookieStore.get("token")?.value || 
-            cookieStore.get("authToken")?.value;
+            cookieStore.get("authToken")?.value ||
+            cookieStore.get("access_token")?.value;
 
         console.log("🔑 Access Token Found:", accessToken ? "Yes (Token exists)" : "No (Token missing)");
 
@@ -24,11 +30,11 @@ export async function requestModeratorAccessAction(): Promise<ResponseState> {
             console.log("❌ Error: Unauthorized - Token missing in cookies");
             return {
                 success: false,
-                message: "Unauthorized! Please login first.",
+                message: "Unauthorized! Please login first. (Token missing in cookies)",
             };
         }
 
-        const backendBaseUrl = process.env.BACKEND_API_URL || "https://amader-patshal-backend.vercel.app";
+        const backendBaseUrl = process.env.BACKEND_API_URL || "https://roots-of-biology-backend.vercel.app";
         const endpoint = `${backendBaseUrl}/api/users/request-moderator`;
         
         console.log("🌐 Sending POST request to endpoint:", endpoint);
@@ -40,6 +46,7 @@ export async function requestModeratorAccessAction(): Promise<ResponseState> {
                 Authorization: `Bearer ${accessToken}`,
             },
             body: JSON.stringify({}),
+            cache: "no-store",
         });
 
         console.log("📥 Backend Response Status:", res.status, res.statusText);

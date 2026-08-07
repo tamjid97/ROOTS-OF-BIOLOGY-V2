@@ -23,7 +23,7 @@ export async function requestStudentAccessAction(): Promise<ResponseState> {
             };
         }
 
-        const res = await fetch("https://amader-patshal-backend.vercel.app/api/users/request-student", {
+        const res = await fetch("https://roots-of-biology-backend.vercel.app/api/users/request-student", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",

@@ -22,6 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { fetchAllUsersAction, updateUserStatusAction } from "../_action/user";
+
 interface IUser {
   id: string;
   name: string;
@@ -257,7 +258,7 @@ export default function AllUsersPage() {
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
-                    <TableRow>
+                    <TableRow key="loading-row">
                       <TableCell colSpan={5} className="h-32 text-center text-slate-500 dark:text-slate-400">
                         <div className="flex items-center justify-center gap-2">
                           <Loader2 className="h-5 w-5 animate-spin text-emerald-500" />
@@ -266,7 +267,7 @@ export default function AllUsersPage() {
                       </TableCell>
                     </TableRow>
                   ) : filteredUsers.length === 0 ? (
-                    <TableRow>
+                    <TableRow key="empty-row">
                       <TableCell colSpan={5} className="h-32 text-center text-slate-500 dark:text-slate-400">
                         খুঁজে পাওয়া যায় নি। অন্য কিছু দিয়ে সার্চ করুন।
                       </TableCell>
