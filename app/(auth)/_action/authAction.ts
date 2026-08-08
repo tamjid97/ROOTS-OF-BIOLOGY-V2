@@ -35,7 +35,7 @@ export const loginAction = async (prevState: LoginState, formData: FormData) => 
       body: JSON.stringify(payload),
     });
 
-    // সার্ভার থেকে HTML বা ভুল রেসপন্স আসলে ব্যবহারকারীকে সহজ ভাষায় মেসেজ দেখাবে
+    // সার্ভার থেকে HTML বা ভুল রেসপন্স আসলে ব্যবহারকারীকে সহজ ভাষায় মেসেজ দেখাবে
     const contentType = res.headers.get("content-type");
     if (!contentType || !contentType.includes("application/json")) {
       const htmlText = await res.text();
@@ -43,7 +43,7 @@ export const loginAction = async (prevState: LoginState, formData: FormData) => 
       return {
         success: false,
         statusCode: res.status,
-        message: "আপনার অ্যাকাউন্ট নেই অথবা ফোন নম্বর বা পাসওয়ার্ড ভুল। দয়া করে আগে রেজিস্টার করুন।",
+        message: "আপনার অ্যাকাউন্ট নেই অথবা ফোন নম্বর বা পাসওয়ার্ড ভুল। দয়া করে আগে রেজিস্টার করুন।",
         data: { accessToken: "", refreshToken: "" },
       };
     }
@@ -55,7 +55,7 @@ export const loginAction = async (prevState: LoginState, formData: FormData) => 
       return {
         success: false,
         statusCode: result.statusCode || res.status,
-        message: "আপনার অ্যাকাউন্ট নেই অথবা ফোন নম্বর বা পাসওয়ার্ড ভুল। দয়া করে আগে রেজিস্টার করুন।",
+        message: "আপনার অ্যাকাউন্ট নেই অথবা ফোন নম্বর বা পাসওয়ার্ড ভুল। দয়া করে আগে রেজিস্টার করুন।",
         data: { accessToken: "", refreshToken: "" },
       };
     }
@@ -79,12 +79,17 @@ export const loginAction = async (prevState: LoginState, formData: FormData) => 
 
       const decodedToken = jwt.decode(result.data.accessToken) as JwtPayload;
 
-      if (decodedToken?.role === "USER" || decodedToken?.role === "STUDENT") {
+      // রোল অনুযায়ী রিডাইরেক্ট হত্তয়া
+      if (decodedToken?.role === "USER") {
         redirect("/user_dashboard");
       } else if (decodedToken?.role === "ADMIN") {
         redirect("/admin_dashbord");
       } else if (decodedToken?.role === "MODERATOR") {
         redirect("/moderator_dashbord");
+      } else if (decodedToken?.role === "STUDENT") {
+        // যদি স্টুডেন্টদের আলাদা ড্যাশবোর্ড বানাতে চাও, তবে এখানে সেই রাউট বসিয়ে দিতে পারো
+        // যেমন: redirect("/student/dashboard");
+        redirect("/");
       }
     }
 
@@ -98,7 +103,7 @@ export const loginAction = async (prevState: LoginState, formData: FormData) => 
     return {
       success: false,
       statusCode: 500,
-      message: "আপনার অ্যাকাউন্ট নেই অথবা ফোন নম্বর বা পাসওয়ার্ড ভুল। দয়া করে আগে রেজিস্টার করুন।",
+      message: "আপনার অ্যাকাউন্ট নেই অথবা ফোন নম্বর বা পাসওয়ার্ড ভুল। দয়া করে আগে রেজিস্টার করুন।",
       data: { accessToken: "", refreshToken: "" },
     };
   }

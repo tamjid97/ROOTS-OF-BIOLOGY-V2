@@ -2,7 +2,7 @@
 
 import React, { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation" // useRouter ইম্পোর্ট করা হলো
 import { cn } from "@/lib/utils"
 import { LogOut, Menu } from "lucide-react"
 
@@ -25,9 +25,10 @@ interface SidebarContentProps {
 }
 
 function SidebarContent({ pathname, user, setOpen }: SidebarContentProps) {
+  const router = useRouter();
   let navItems: ISidebarItem[] = [];
 
-const role = user?.data?.role?.toUpperCase();
+  const role = user?.data?.role?.toUpperCase();
 
   if (role === "USER") {
     navItems = sidebarMenuItems.USER;
@@ -36,6 +37,24 @@ const role = user?.data?.role?.toUpperCase();
   } else if (role === "ADMIN") {
     navItems = sidebarMenuItems.ADMIN;
   }
+
+  // লগআউট হ্যান্ডলার ফাংশন
+  const handleLogout = async () => {
+    try {
+      // যদি কুকি ব্যবহার করো, তবে সার্ভার অ্যাকশন বা API কল করে কুকি ক্লিয়ার করতে হবে।
+      // উদাহরণস্বরূপ (যদি লোকাল স্টোরেজ বা কুক্ষিগত কিছু থাকে):
+      // localStorage.removeItem("token"); 
+
+      // অথবা তোমার ব্যাকএন্ডের লগআউট API কল করতে পারো:
+      // await fetch("/api/auth/logout", { method: "POST" });
+
+      // সফলভাবে লগআউট হওয়ার পর হোমপেজ বা লগইন পেজে পাঠিয়ে দেওয়া:
+      router.push("/login"); // অথবা "/"
+      router.refresh();
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
 
   return (
     <div className="flex flex-col h-full justify-between">
@@ -86,7 +105,11 @@ const role = user?.data?.role?.toUpperCase();
 
       {/* Logout Button */}
       <div className="border-t border-emerald-200/60 p-4 dark:border-emerald-900/60">
-        <Button variant="ghost" className="w-full justify-start rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700">
+        <Button 
+          variant="ghost" 
+          onClick={handleLogout} // এখানে হ্যান্ডলার যুক্ত করা হয়েছে
+          className="w-full justify-start rounded-xl text-red-600 hover:bg-red-50 hover:text-red-700 cursor-pointer"
+        >
           <LogOut className="mr-3 h-5 w-5" />
           Logout
         </Button>
