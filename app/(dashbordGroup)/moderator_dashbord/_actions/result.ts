@@ -52,21 +52,20 @@ export async function createResult(formData: FormData): Promise<ActionResponse> 
       return { success: false, message: "User not logged in!" };
     }
 
-    const backendUrl = `${process.env.BACKEND_API_URL}/api/results`; // আপনার ব্যাকএন্ড রাউট অনুযায়ী পরিবর্তন করতে পারেন
+    const backendUrl = `${process.env.BACKEND_API_URL}/api/results`;
 
     const response = await fetch(backendUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${accessToken}`,
-        Cookie: `accessToken=${accessToken}`,
       },
       body: JSON.stringify(payload),
     });
 
     const result = (await handleApiResponse(response)) as ActionResponse;
     if (result.success) {
-      revalidateTag("results", "max");
+      revalidateTag("results","max");
     }
     return result;
   } catch (error: unknown) {
@@ -92,7 +91,6 @@ export const getResults = async () => {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${accessToken}`,
-        Cookie: `accessToken=${accessToken}`,
       },
       next: {
         tags: ["results"]
@@ -100,6 +98,12 @@ export const getResults = async () => {
     });
 
     const result = await handleApiResponse(res);
+    
+    // ব্যাকএন্ড যদি { success: true, results: [...] } এভাবে ডেটা পাঠায়, তবে তা data-তে ট্রান্সফর্ম করা হলো
+    if (result && result.results && !result.data) {
+      return { success: true, data: result.results };
+    }
+    
     return result;
   } catch (error) {
     console.error("[Action] getResults Exception Error:", error);
@@ -119,9 +123,7 @@ export const updateResult = async (id: string, formData: FormData): Promise<Acti
   };
 
   const accessToken = await isAccessTokenExist();
-
   if (!accessToken) {
-    console.error("[Action] updateResult Error: User not logged in!");
     return { success: false, message: "User not logged in!" };
   }
 
@@ -133,15 +135,13 @@ export const updateResult = async (id: string, formData: FormData): Promise<Acti
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${accessToken}`,
-        Cookie: `accessToken=${accessToken}`,
       },
       body: JSON.stringify(payload)
     });
 
     const result = await handleApiResponse(res) as ActionResponse;
-    
     if (result.success) {
-      revalidateTag("results", "max");
+      revalidateTag("results","max");
     }
     return result;
   } catch (error) {
@@ -154,7 +154,6 @@ export const updateResult = async (id: string, formData: FormData): Promise<Acti
 export const deleteResult = async (id: string): Promise<ActionResponse> => {
   console.log(`[Action] deleteResult called for ID: ${id} 🗑️`);
   const accessToken = await isAccessTokenExist();
-
   if (!accessToken) {
     return { success: false, message: "User not logged in!" };
   }
@@ -167,14 +166,12 @@ export const deleteResult = async (id: string): Promise<ActionResponse> => {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${accessToken}`,
-        Cookie: `accessToken=${accessToken}`
       }
     });
 
     const result = await handleApiResponse(res) as ActionResponse;
-
     if (result.success) {
-      revalidateTag("results", "max");
+      revalidateTag("results","max");
     }
     return result;
   } catch (error) {

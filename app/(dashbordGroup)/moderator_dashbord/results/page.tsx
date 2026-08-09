@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useEffect, useTransition } from "react";
 import { motion } from "framer-motion";
 import { Plus, Edit2, Trash2, Award, ExternalLink, Search, Users, Calendar, Loader2 } from "lucide-react";
 
-import { createResult, updateResult, deleteResult } from "../_actions/result";
+import { createResult, updateResult, deleteResult, getResults } from "../_actions/result";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,18 +20,37 @@ interface IResult {
   resultLink: string;
 }
 
-interface Props {
-  initialResults: IResult[];
-}
-
-export default function ResultManagementContent({ initialResults = [] }: Props) {
-  // নিশ্চিত করা হলো যেন initialResults undefined হলে একটি খালি অ্যারে থাকে
-  const [results, setResults] = useState<IResult[]>(Array.isArray(initialResults) ? initialResults : []);
+export default function ResultManagementContent() {
+  const [results, setResults] = useState<IResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [formData, setFormData] = useState({ id: "", examName: "", batch: "", examDate: "", resultLink: "" });
   const [isEditing, setIsEditing] = useState(false);
+
+  // 🔴 পেজ লোড হওয়ার সময় সার্ভার অ্যাকশন থেকে ডেটা ফেচ করার লজিক 🔴
+  useEffect(() => {
+    async function loadInitialData() {
+      try {
+        const res = await getResults();
+        if (res && res.success && Array.isArray(res.data)) {
+          setResults(res.data);
+        } else if (res && Array.isArray(res.results)) {
+          // ব্যাকএন্ড রেসপন্স যদি সরাসরি res.results এ ডেটা পাঠায়
+          setResults(res.results);
+        }
+      } catch (error) {
+        console.error("Failed to load initial results:", error);
+      } finally {
+        setInitialLoading(false);
+      }
+    }
+    loadInitialData();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -63,8 +82,14 @@ export default function ResultManagementContent({ initialResults = [] }: Props) 
           }
         } else {
           const res = await createResult(formPayload);
-          if (res.success && res.data) {
-            setResults((prev) => [res.data as IResult, ...prev]);
+          if (res.success) {
+            // নতুন ডাটা যুক্ত করার পর ব্যাকএন্ড থেকে ফ্রেশ ডাটা আনা হচ্ছে জাস্ট ইন কেস আইডি জেনারেট হতে সমস্যা হলে
+            const freshData = await getResults();
+            if (freshData.success && Array.isArray(freshData.data)) {
+              setResults(freshData.data);
+            } else if (res.data) {
+              setResults((prev) => [res.data as IResult, ...prev]);
+            }
             alert(res.message || "Result published successfully!");
           } else {
             alert(res.message || "Failed to publish result");
@@ -106,6 +131,15 @@ export default function ResultManagementContent({ initialResults = [] }: Props) 
       }
     });
   };
+
+  // Search Filtering Logic
+  const filteredResults = results.filter((res) => {
+    const searchLower = searchQuery.toLowerCase();
+    return (
+      (res.examName && res.examName.toLowerCase().includes(searchLower)) ||
+      (res.batch && res.batch.toLowerCase().includes(searchLower))
+    );
+  });
 
   return (
     <div className="space-y-8 pb-10 animate-in fade-in duration-500">
@@ -197,7 +231,7 @@ export default function ResultManagementContent({ initialResults = [] }: Props) 
                 <div className="pt-2 flex gap-3">
                   <Button 
                     type="submit" 
-                    disabled={loading || isPending}
+                    disabled={loading || isPending || initialLoading}
                     className="w-full bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700"
                   >
                     {(loading || isPending) ? <Loader2 className="animate-spin h-5 w-5" /> : (isEditing ? "Update Result" : "Publish Result")}
@@ -230,8 +264,7 @@ export default function ResultManagementContent({ initialResults = [] }: Props) 
               <div>
                 <CardTitle className="text-slate-800 dark:text-emerald-100">Published Results</CardTitle>
                 <CardDescription className="dark:text-slate-400 mt-1">
-                  {/* এখানে সেফলি length চেক করা হয়েছে */}
-                  সর্বমোট {results?.length || 0} টি পরীক্ষার ফলাফল প্রকাশ করা হয়েছে।
+                  সর্বমোট {filteredResults.length} টি পরীক্ষার ফলাফল প্রকাশ করা হয়েছে।
                 </CardDescription>
               </div>
               <div className="relative w-full sm:w-64">
@@ -239,6 +272,8 @@ export default function ResultManagementContent({ initialResults = [] }: Props) 
                 <Input
                   type="search"
                   placeholder="Search by exam or batch..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 dark:bg-slate-900/50 dark:border-emerald-800/50 focus-visible:ring-emerald-500"
                 />
               </div>
@@ -255,14 +290,24 @@ export default function ResultManagementContent({ initialResults = [] }: Props) 
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {!results || results.length === 0 ? (
+                    
+                    {initialLoading ? (
                       <TableRow>
                         <TableCell colSpan={4} className="h-32 text-center text-slate-500 dark:text-slate-400">
-                          এখনো কোনো ফলাফল প্রকাশ করা হয়নি।
+                          <div className="flex items-center justify-center gap-2">
+                            <Loader2 className="animate-spin h-5 w-5 text-emerald-600" />
+                            <span>ফলাফল লোড হচ্ছে...</span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : !filteredResults || filteredResults.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="h-32 text-center text-slate-500 dark:text-slate-400">
+                          {searchQuery ? "আপনার খোঁজা ফলাফল পাওয়া যায়নি।" : "এখনো কোনো ফলাফল প্রকাশ করা হয়নি।"}
                         </TableCell>
                       </TableRow>
                     ) : (
-                      results.map((res) => (
+                      filteredResults.map((res) => (
                         <TableRow key={res.id} className="border-slate-100 dark:border-emerald-900/30 dark:hover:bg-emerald-950/20">
                           
                           <TableCell className="font-medium text-slate-700 dark:text-emerald-50">

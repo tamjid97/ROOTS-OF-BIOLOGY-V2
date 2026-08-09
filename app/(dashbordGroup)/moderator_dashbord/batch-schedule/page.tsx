@@ -57,11 +57,18 @@ export default function BatchSchedulePage() {
   const [isPending, startTransition] = useTransition();
   const [formMessage, setFormMessage] = useState<{ success: boolean; text: string } | null>(null);
 
+  // Search State
+  const [searchQuery, setSearchQuery] = useState("");
+
   // ডাটা ফেচ করার কমন ফাংশন
   const fetchBatchData = async () => {
-    const response = await getBatchTime();
-    if (response?.success) {
-      setSchedules(response.data || []);
+    try {
+      const response = await getBatchTime();
+      if (response?.success) {
+        setSchedules(response.data || []);
+      }
+    } catch (err) {
+      console.error("Error fetching data:", err);
     }
   };
 
@@ -80,7 +87,6 @@ export default function BatchSchedulePage() {
   const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    // 🌟 সমাধান: await করার আগেই form ভেরিয়েবলে টার্গেট সেভ করে রাখা হলো
     const form = e.currentTarget; 
     const formData = new FormData(form);
 
@@ -90,8 +96,8 @@ export default function BatchSchedulePage() {
         if (res?.success) {
           setEditingBatch(null);
           setFormMessage({ success: true, text: res.message || "Schedule updated successfully!" });
-          fetchBatchData(); 
-          form.reset(); // 🌟 এখানে form.reset() ব্যবহার করা হয়েছে
+          await fetchBatchData(); 
+          form.reset(); 
         } else {
           setFormMessage({ success: false, text: res?.message || "Failed to update schedule" });
         }
@@ -99,8 +105,8 @@ export default function BatchSchedulePage() {
         const res = await createBatch(initialState, formData);
         if (res?.success) {
           setFormMessage({ success: true, text: res.message || "Schedule created successfully!" });
-          fetchBatchData(); 
-          form.reset(); // 🌟 এখানে form.reset() ব্যবহার করা হয়েছে
+          await fetchBatchData(); 
+          form.reset(); 
         } else {
           setFormMessage({ success: false, text: res?.message || "Failed to create schedule" });
         }
@@ -113,12 +119,18 @@ export default function BatchSchedulePage() {
     if (window.confirm("Are you sure you want to delete this schedule?")) {
       const res = await deleteBatch(id);
       if (res?.success) {
-        fetchBatchData(); 
+        await fetchBatchData(); 
       } else {
         alert(res?.message || "Failed to delete schedule");
       }
     }
   };
+
+  // 🔴 Search Filtering Logic (উন্নত ও নিরাপদ) 🔴
+  const filteredSchedules = schedules.filter((sch) => {
+    if (!sch || !sch.batchName) return false;
+    return sch.batchName.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   return (
     <div className="space-y-8 pb-10 animate-in fade-in duration-500">
@@ -170,7 +182,12 @@ export default function BatchSchedulePage() {
             </CardHeader>
             <CardContent>
               
-              <form onSubmit={handleFormSubmit} key={editingBatch ? editingBatch.id : "create"} className="space-y-4">
+              {/* 🔴 key প্রপ ব্যবহার করা হয়েছে যাতে এডিট করার সময় ভ্যালুগুলো রি-রেন্ডার হয়ে ফর্মে বসে যায় 🔴 */}
+              <form 
+                onSubmit={handleFormSubmit} 
+                key={editingBatch ? `edit-${editingBatch.id}` : "create-form"} 
+                className="space-y-4"
+              >
                 
                 {formMessage?.text && (
                   <p className={`text-sm font-medium ${formMessage.success ? "text-emerald-500" : "text-red-500"}`}>
@@ -244,14 +261,18 @@ export default function BatchSchedulePage() {
                   Current Schedules
                 </CardTitle>
                 <CardDescription className="dark:text-slate-400 mt-1">
-                  সর্বমোট {schedules.length} টি ব্যাচের শিডিউল অ্যাক্টিভ আছে।
+                  সর্বমোট {filteredSchedules.length} টি ব্যাচের শিডিউল অ্যাক্টিভ আছে।
                 </CardDescription>
               </div>
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+                
+                {/* 🔴 সার্চ ইনপুট ঠিকমতো কানেক্ট করা হলো 🔴 */}
                 <Input
                   type="search"
                   placeholder="Search batch..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 dark:bg-slate-900/50 dark:border-emerald-800/50 focus-visible:ring-emerald-500"
                 />
               </div>
@@ -262,9 +283,9 @@ export default function BatchSchedulePage() {
                   <div className="p-10 text-center text-slate-500 dark:text-slate-400">
                     Loading schedules...
                   </div>
-                ) : schedules.length === 0 ? (
+                ) : filteredSchedules.length === 0 ? (
                   <div className="p-10 text-center text-slate-500 dark:text-slate-400">
-                    No schedules found. Please add a new one.
+                    {searchQuery ? "আপনার খোঁজা ব্যাচটি পাওয়া যায়নি।" : "No schedules found. Please add a new one."}
                   </div>
                 ) : (
                   <Table className="min-w-[650px]">
@@ -282,7 +303,8 @@ export default function BatchSchedulePage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {schedules.map((sch) => (
+                      {/* 🔴 ফিল্টার করা অ্যারে লুপ হচ্ছে 🔴 */}
+                      {filteredSchedules.map((sch) => (
                         <TableRow
                           key={sch.id || sch.batchName}
                           className="border-slate-100 dark:border-emerald-900/30 dark:hover:bg-emerald-950/20"
