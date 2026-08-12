@@ -44,7 +44,7 @@ export async function getStudentRequestsAction(): Promise<ResponseState> {
             };
         }
 
-        const res = await fetch("https://amader-patshal-backend.vercel.app/api/moderator/pending-requests", {
+        const res = await fetch("https://roots-of-biology-backend.vercel.app/api/moderator/pending-requests", {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -115,7 +115,7 @@ export async function getStudentDetailsAction(id: string): Promise<ResponseState
             };
         }
 
-        const res = await fetch(`https://amader-patshal-backend.vercel.app/api/moderator/details/${id}`, {
+        const res = await fetch(`https://roots-of-biology-backend.vercel.app/api/moderator/details/${id}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -187,7 +187,7 @@ export async function updateStudentRequestStatusAction(
             return { success: false, message: "Unauthorized! Please login first." };
         }
 
-        const res = await fetch(`https://amader-patshal-backend.vercel.app/api/moderator/approve/${requestId}`, {
+        const res = await fetch(`https://roots-of-biology-backend.vercel.app/api/moderator/approve/${requestId}`, {
             method: "PATCH", 
             headers: {
                 "Content-Type": "application/json",
