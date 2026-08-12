@@ -118,6 +118,8 @@ interface IPdf {
   title: string;
   subject?: string;
   className?: string;
+  category?: string;
+  type?: string; // <--- এখানে type প্রপার্টি যুক্ত করা হয়েছে
   pdfUrl?: string;
   link?: string;
   image?: string;
@@ -142,12 +144,8 @@ export default function PdfPage() {
           getMe(),
         ]);
 
-        console.log("========== [DEBUG] USER RESPONSE START ==========");
-        console.log("Full userResponse:", userResponse);
-
         if (userResponse) {
           const userData = userResponse?.data?.user || userResponse?.data || userResponse?.user || userResponse;
-          console.log("Extracted userData object:", userData);
 
           const fetchedRole = userData?.role;
           if (fetchedRole) {
@@ -162,15 +160,13 @@ export default function PdfPage() {
             userData?.hscBatch || 
             userData?.sscBatch || "";
 
-          console.log("Extracted Batch/Class:", fetchedBatch);
           if (fetchedBatch) {
             setUserBatch(fetchedBatch);
           }
         }
-        console.log("========== [DEBUG] USER RESPONSE END ==========");
 
         const rawData = Array.isArray(pdfResponse) ? pdfResponse : pdfResponse?.data;
-        if (pdfResponse?.success && Array.isArray(rawData)) {
+        if (Array.isArray(rawData)) {
           const formatted = rawData.map((item: Record<string, unknown>) => ({
             ...(item as unknown as IPdf),
             id: (item._id as string) || (item.id as string) || "",
@@ -179,8 +175,13 @@ export default function PdfPage() {
             title: (item.title as string) || "",
             subject: (item.subject as string) || "",
             className: (item.className as string) || "",
+            category: (item.category as string) || "",
+            type: (item.type as string) || "",
             createdAt: (item.createdAt as string) || new Date().toISOString().split("T")[0],
-          }));
+          })).sort((a, b) => {
+            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          });
+          
           setPdfs(formatted);
         }
       } catch (error)  {
@@ -194,6 +195,20 @@ export default function PdfPage() {
 
   const filteredPdfs = pdfs.filter((pdf) => {
     const className = (pdf.className || "").toLowerCase();
+    const category = (pdf.category || "").toLowerCase();
+    const type = (pdf.type || "").toLowerCase();
+
+    // যদি className, category বা type-এ 'qna' বা 'question' থাকে, তবে তা এই পিডিএফ পেজে দেখাবে না
+    if (
+      className.includes("qna") || 
+      category.includes("qna") || 
+      type.includes("qna") ||
+      className.includes("question") ||
+      category.includes("question")
+    ) {
+      return false;
+    }
+
     const isSsc = className.includes("ssc") || className.includes("class 9") || className.includes("class 10");
     
     if (activeTab === "SSC" && !isSsc) return false;
@@ -211,7 +226,6 @@ export default function PdfPage() {
     return <GlobalLoading />;
   }
 
-  // কঠোরভাবে চেক করা হলো: শুধুমাত্র রোল 'STUDENT' হলে তবেই স্টুডেন্ট হিসেবে গণ্য হবে। (USER রোল হলে এখানে false আসবে)
   const roleUpper = userRole?.toUpperCase()?.trim() || "";
   const isAuthorizedStudent = roleUpper === "STUDENT" || roleUpper === "ADMIN" || roleUpper === "MODERATOR";
 
